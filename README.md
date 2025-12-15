@@ -47,9 +47,6 @@ Bot de WhatsApp para organizar e sortear Amigo Secreto de forma automática, div
 
 - **`!lembrar`**: O bot reenvia seu resultado no privado (caso tenha esquecido).
 
-### Extras
-- **`!maria`**: Um comando especial de carinho.
-
 ## 🛠️ Estrutura do Projeto
 
 - `index.js`: Ponto de entrada e gerenciamento de mensagens.
