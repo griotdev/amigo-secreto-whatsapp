@@ -286,8 +286,21 @@ _${dicaPresente}_`;
 💡 Dica: _${dica}_`;
 
                 // Tenta mandar no privado
-                await client.sendMessage(idAutor, textoLembrete);
+                const msgEnviada = await client.sendMessage(idAutor, textoLembrete);
                 message.reply("📩 Enviei no seu privado! Dá uma olhada.");
+
+                // Lógica de apagar a mensagem para manter segredo (Igual ao !finalizar)
+                if (idAutor !== client.info.wid._serialized) {
+                    await delay(1000); // Segurança
+                    try {
+                        await msgEnviada.delete(false); // Apaga só pra mim (Admin)
+                        console.log(`🗑️ Lembrete apagado do chat do Admin (enviado para ${contact.pushname}).`);
+                    } catch (e) {
+                        console.log(`⚠️ Erro ao apagar lembrete:`, e.message);
+                    }
+                } else {
+                    console.log(`👀 Lembrete mantido (Admin pediu o próprio).`);
+                }
             } else {
                 message.reply("Não encontrei você no último sorteio.");
             }
