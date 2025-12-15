@@ -140,7 +140,7 @@ Exemplo:
         // --- 4. CADASTRO ---
         // Se chegou aqui, temos um "numeroPuro" válido (seja automático ou manual)
 
-        const jaEstaNaLista = listaTemporaria.some(p => p.numero === numeroPuro);
+        const jaEstaNaLista = listaTemporaria.some(p => p.idSeguro === idAutor);
 
         if (jaEstaNaLista) {
             message.reply(`Ei ${nome}, você já está na lista!`);
@@ -153,12 +153,13 @@ Exemplo:
             listaTemporaria.push({
                 nome: nome,
                 numero: numeroPuro,
+                idSeguro: idAutor, // Salva o ID exato que mandou a mensagem (LID ou c.us)
                 sugestoes: dica
             });
 
             fs.writeFileSync('./participantes.json', JSON.stringify(listaTemporaria, null, 2));
 
-            console.log(`➕ Novo participante: ${nome} (Num: ${numeroPuro})`);
+            console.log(`➕ Novo participante: ${nome} (Num: ${numeroPuro} | ID: ${idAutor})`);
             message.react('✅');
         }
     }
@@ -190,14 +191,17 @@ Os resultados serão enviados no privado! 🤫`);
             console.log(`\nTentando enviar para: ${par.amigo.nome}...`);
 
             try {
-                let idParaEnvio = null;
+                // Tenta usar o ID Seguro (LID) se existir, senão tenta descobrir pelo número
+                let idParaEnvio = par.amigo.idSeguro;
 
-                // Tenta pegar o ID
-                const contatoZap = await client.getNumberId(numeroSalvo);
-                if (contatoZap) {
-                    idParaEnvio = contatoZap._serialized;
-                } else {
-                    idParaEnvio = numeroSalvo + "@c.us";
+                if (!idParaEnvio) {
+                    // Fallback legado (caso alguém tenha entrado antes da atualização)
+                    const contatoZap = await client.getNumberId(numeroSalvo);
+                    if (contatoZap) {
+                        idParaEnvio = contatoZap._serialized;
+                    } else {
+                        idParaEnvio = numeroSalvo + "@c.us";
+                    }
                 }
 
                 if (idParaEnvio) {
@@ -254,13 +258,23 @@ _${dicaPresente}_`;
 
             const log = JSON.parse(fs.readFileSync('./resultado_log.json'));
 
+
+
+            // FIX: Usar getAuthorId para pegar o ID exato de quem mandou (seja LID ou não)
             const idAutor = getAuthorId(message);
-            const quemMandou = idAutor.replace(/[^0-9]/g, '');
+
+            console.log(`🔍 !lembrar solicitado por ID: ${idAutor}`);
 
             const parEncontrado = log.find(par => {
+                // Prioridade 1: Match exato de ID Seguro (LID bate com LID)
+                if (par.amigo.idSeguro && par.amigo.idSeguro === idAutor) {
+                    return true;
+                }
+
+                // Prioridade 2: Match legado por número (caso antigo)
+                const quemMandouNum = idAutor.replace(/[^0-9]/g, '');
                 const numeroSalvo = par.amigo.numero.replace(/[^0-9]/g, '');
-                // Compara os últimos 8 dígitos (Ignora o 9 e DDD para evitar erro)
-                return quemMandou.slice(-8) === numeroSalvo.slice(-8);
+                return quemMandouNum.slice(-8) === numeroSalvo.slice(-8);
             });
 
             if (parEncontrado) {
