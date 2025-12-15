@@ -1,5 +1,5 @@
 const { getChatId, delay, saveResultLog } = require('../utils');
-const realizarSorteio = require('../../sorteio'); // Caminho relativo da raiz (sorteio.js está na raiz ainda)
+const realizarSorteio = require('../sorteio'); // Caminho atualizado
 
 module.exports = {
     name: 'finalizar',
