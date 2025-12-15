@@ -18,6 +18,22 @@ let idGrupoPermitido = null;
 // Função de delay (espera)
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
+// Helper: Identifica o ID do Chat (Funciona pra quem manda e pro Admin/Bot)
+function getChatId(message) {
+    // Se fui eu que mandei (fromMe), o chat é o 'to'. Se foi outro, é 'from'.
+    return message.fromMe ? message.to : message.from;
+}
+
+// Helper: Identifica o ID do Autor (Funciona pra quem manda e pro Admin/Bot)
+function getAuthorId(message) {
+    if (message.fromMe) {
+        // Se o bot/admin enviou, pega o ID do cliente logado
+        return client.info.wid._serialized;
+    }
+    // Em grupos, 'author' é quem mandou. No privado, é 'from'.
+    return message.author || message.from;
+}
+
 // Função para salvar Log de resultados
 function salvarLog(resultado) {
     const jsonString = JSON.stringify(resultado, null, 2);
@@ -52,11 +68,11 @@ client.on('message_create', async (message) => {
 
         estado = 'ABERTO';
         listaTemporaria = []; // Zera a lista
-        idGrupoPermitido = message.from; // Trava o bot neste chat
+        idGrupoPermitido = getChatId(message); // Trava o bot neste chat
 
-        console.log(`Sorteio INICIADO no chat: ${message.from}`);
+        console.log(`Sorteio INICIADO no chat: ${idGrupoPermitido}`);
 
-        await client.sendMessage(message.from, `🎄 *AMIGO SECRETO INICIADO!* 🎄
+        await client.sendMessage(idGrupoPermitido, `🎄 *AMIGO SECRETO INICIADO!* 🎄
         
 Para participar, responda aqui com:
 *!participar 5543SEUNUMERO [Sua dica de presente]*
@@ -72,14 +88,14 @@ _!participar 5543999998888 Gosto de livros e chocolate_
     // ======================================================
     if (message.body.toLowerCase().startsWith('!participar') && estado === 'ABERTO') {
 
-        if (message.from !== idGrupoPermitido && message.to !== idGrupoPermitido) return;
+        // Valida se é o grupo certo
+        if (getChatId(message) !== idGrupoPermitido) return;
 
         // --- 1. Tenta identificar AUTOMATICAMENTE ---
-        let idAutor = message.author || message.from;
+        let idAutor = getAuthorId(message);
         let nome = "Participante";
 
         if (message.fromMe) {
-            idAutor = client.info.wid._serialized;
             nome = "André";
         } else if (message._data && message._data.notifyName) {
             nome = message._data.notifyName;
@@ -151,7 +167,7 @@ Exemplo:
     // COMANDO 3: FINALIZAR (O "Admin" manda)
     // ======================================================
     if (message.body === '!finalizar' && estado === 'ABERTO') {
-        if (message.from !== idGrupoPermitido) return;
+        if (getChatId(message) !== idGrupoPermitido) return;
 
         if (listaTemporaria.length < 2) {
             message.reply("❌ Precisa de pelo menos 2 pessoas para sortear!");
@@ -200,13 +216,17 @@ _${dicaPresente}_`;
                     // 2. ESPERA UM POUCO (Segurança para não bugar o envio)
                     await delay(1000);
 
-                    // 3. APAGA SÓ PARA VOCÊ (O parâmetro é 'true' para todos, ou 'false' para mim)
-                    // Se você colocar 'true' aqui, vai aparecer "Mensagem apagada" pro seu amigo!
-                    try {
-                        await msgEnviada.delete(false);
-                        console.log(`🗑️ Mensagem apagada do chat do Admin.`);
-                    } catch (e) {
-                        console.log(`⚠️ Não deu pra apagar (mas foi enviada).`);
+                    // 3. APAGA SÓ PARA VOCÊ (Se não for você mesmo)
+                    // Se o destinatário for o próprio bot (Admin), NÃO apaga, senão ele não vê o resultado dele.
+                    if (idParaEnvio !== client.info.wid._serialized) {
+                        try {
+                            await msgEnviada.delete(false); // false = Apaga só pra mim (Sender)
+                            console.log(`🗑️ Mensagem apagada do chat do Admin.`);
+                        } catch (e) {
+                            console.log(`⚠️ Não deu pra apagar (mas foi enviada).`);
+                        }
+                    } else {
+                        console.log(`👀 Mensagem mantida (André recebeu o próprio resultado).`);
                     }
 
                     await delay(2000); // Espera pro próximo
@@ -233,7 +253,9 @@ _${dicaPresente}_`;
             if (!fs.existsSync('./resultado_log.json')) return;
 
             const log = JSON.parse(fs.readFileSync('./resultado_log.json'));
-            const quemMandou = message.from.replace(/[^0-9]/g, '');
+
+            const idAutor = getAuthorId(message);
+            const quemMandou = idAutor.replace(/[^0-9]/g, '');
 
             const parEncontrado = log.find(par => {
                 const numeroSalvo = par.amigo.numero.replace(/[^0-9]/g, '');
@@ -249,9 +271,9 @@ _${dicaPresente}_`;
                 const textoLembrete = `🤫 Psiu! Você tirou: *${parEncontrado.destinatario.nome}*
 💡 Dica: _${dica}_`;
 
-                // Tenta mandar no privado, se não der, responde na mensagem (arriscado em grupo)
-                // Vamos mandar reply mesmo, mas o ideal seria DM.
-                message.reply(textoLembrete);
+                // Tenta mandar no privado
+                await client.sendMessage(idAutor, textoLembrete);
+                message.reply("📩 Enviei no seu privado! Dá uma olhada.");
             } else {
                 message.reply("Não encontrei você no último sorteio.");
             }
