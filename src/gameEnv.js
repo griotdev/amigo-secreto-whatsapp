@@ -27,12 +27,14 @@ class GameManager {
         }
     }
 
-    addParticipant(nome, numero, idSeguro, sugestoes) {
+    addParticipant(nome, numero, idSeguro, sugestoes, proxyContact = null, proxyName = null) {
         this.listaTemporaria.push({
             nome,
             numero,
             idSeguro,
-            sugestoes
+            sugestoes,
+            proxyContact,
+            proxyName
         });
         this.saveParticipants();
     }

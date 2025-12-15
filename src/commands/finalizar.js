@@ -26,10 +26,28 @@ Os resultados serão enviados no privado! 🤫`);
             const dicaPresente = par.destinatario.sugestoes;
 
             console.log(`\nTentando enviar para: ${par.amigo.nome}...`);
+            console.log(`🔍 Dados: ${JSON.stringify(par.amigo)}`); // DEBUG EXTRA
 
             try {
-                // Tenta usar o ID Seguro (LID)
+                // Tenta usar o ID Seguro (LID) ou Proxy
                 let idParaEnvio = par.amigo.idSeguro;
+                let ehProxy = false;
+
+                // Detecta se é um usuário Proxy (pelo ID gerado em apadrinhar.js)
+                if (par.amigo.idSeguro.startsWith('proxy_')) {
+                    ehProxy = true;
+                    if (par.amigo.proxyContact) {
+                        idParaEnvio = par.amigo.proxyContact;
+                        console.log(`🔀 Redirecionando envio de ${par.amigo.nome} para o Padrinho/Proxy (${idParaEnvio})`);
+                    } else {
+                        console.error(`⚠️ USUÁRIO PROXY (${par.amigo.nome}) SEM CONTATO DE PADRINHO! Ignorando envio.`);
+                        continue; // Pula este usuário para não travar o loop
+                    }
+                } else if (par.amigo.proxyContact) {
+                    idParaEnvio = par.amigo.proxyContact;
+                    ehProxy = true;
+                    console.log(`🔀 Redirecionando envio de ${par.amigo.nome} para o Padrinho/Proxy (${idParaEnvio})`);
+                }
 
                 if (!idParaEnvio) {
                     // Fallback
@@ -42,13 +60,33 @@ Os resultados serão enviados no privado! 🤫`);
                 }
 
                 if (idParaEnvio) {
-                    const texto = `🎅 Olá ${par.amigo.nome}!
+                    // Check de segurança para evitar crashes
+                    if (!idParaEnvio.endsWith('@c.us') && !idParaEnvio.endsWith('@lid')) {
+                        console.error(`❌ ID Inválido detectado para ${par.amigo.nome}: ${idParaEnvio}. Pulando para evitar crash.`);
+                        continue;
+                    }
+
+                    let texto;
+
+                    if (ehProxy) {
+                        texto = `🎅 Olá! Você está recebendo esta mensagem como PADRINHO de *${par.amigo.nome}*!
+                    
+O Amigo Secreto de ${par.amigo.nome} é: *${par.destinatario.nome}* 🎁
+
+💡 *Dica de Presente de ${par.destinatario.nome}:*
+_${dicaPresente}_
+
+⚠️ *Importante:* Por favor, entregue este resultado para ${par.amigo.nome} em segredo!`;
+                    } else {
+                        texto = `🎅 Olá ${par.amigo.nome}!
                     
 O seu Amigo Secreto é: *${par.destinatario.nome}* 🎁
 
 💡 *Dica de Presente:*
 _${dicaPresente}_`;
+                    }
 
+                    console.log(`🚀 Enviando para ${idParaEnvio} (LID/Proxy validado)...`); // LOG EXTRA
                     const msgEnviada = await client.sendMessage(idParaEnvio, texto);
                     console.log(`✅ Enviado para ${par.amigo.nome}`);
 
@@ -67,9 +105,11 @@ _${dicaPresente}_`;
                     }
 
                     await delay(2000);
+                } else {
+                    console.log(`❌ Não encontrei ID para envio de: ${par.amigo.nome} (Num: ${numeroSalvo})`);
                 }
             } catch (err) {
-                console.error(`❌ Falha envio: ${err.message}`);
+                console.error(`❌ ERRO CRÍTICO no envio para ${par.amigo.nome}:`, err);
             }
         }
 
