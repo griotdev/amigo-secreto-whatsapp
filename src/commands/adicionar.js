@@ -10,13 +10,19 @@ module.exports = {
         // Formato: !adicionar 5511999999999 Nome da Pessoa
         const args = message.body.trim().split(/ +/);
 
-        if (args.length < 3) {
-            message.reply('⚠️ Formato inválido! Use: *!adicionar 5511999999999 Nome da Pessoa*');
+        if (args.length < 2) {
+            message.reply('⚠️ Formato inválido! Use: *!adicionar <numero> [nome] & [dicas]*');
             return;
         }
 
         const numeroInput = args[1].replace(/\D/g, '');
-        const nomeParticipante = args.slice(2).join(' ');
+
+        // Separa Nome de Dicas usando "&"
+        const restoComando = args.slice(2).join(' ');
+        const [nomeRaw, dicasRaw] = restoComando.split('&');
+
+        let nomeParticipante = nomeRaw ? nomeRaw.trim() : "";
+        let dica = dicasRaw ? dicasRaw.trim() : "Participante Offline (adicionado manualmente)";
 
         // Validação básica de número BR (55 + 2 DDD + 8/9 digitos) = 12 ou 13
         if (numeroInput.length < 12 || numeroInput.length > 13) {
@@ -35,6 +41,23 @@ module.exports = {
                 return;
             }
             idSeguro = contactId._serialized;
+
+            // Se não forneceu nome, tenta buscar
+            if (!nomeParticipante) {
+                try {
+                    const contact = await client.getContactById(idSeguro);
+                    nomeParticipante = contact.pushname || contact.name || contact.shortName;
+
+                    if (!nomeParticipante) {
+                        nomeParticipante = "Sem Nome (" + numeroInput + ")";
+                        message.reply(`ℹ️ Não consegui achar o nome público deste contato. Usando: ${nomeParticipante}`);
+                    }
+                } catch (e) {
+                    console.error("Erro ao buscar nome:", e);
+                    nomeParticipante = "Sem Nome (" + numeroInput + ")";
+                }
+            }
+
         } catch (error) {
             console.error(error);
             message.reply("❌ Erro ao verificar número. Tente de novo.");
@@ -46,13 +69,11 @@ module.exports = {
             return;
         }
 
-        // Adiciona sem dicas por enquanto
-        const dica = "Participante Offline (adicionado manualmente)";
-
         // Usa o idSeguro validado que termina em @c.us
         gameManager.addParticipant(nomeParticipante, numeroInput, idSeguro, dica);
 
         console.log(`➕ Participante Offline: ${nomeParticipante} (Num: ${numeroInput} | ID: ${idSeguro})`);
-        message.reply(`✅ *${nomeParticipante}* foi adicionado(a) com ID validado!`);
+        message.reply(`✅ *${nomeParticipante}* foi adicionado(a)!
+💡 Dicas: ${dica}`);
     }
 };
