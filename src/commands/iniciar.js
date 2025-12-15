@@ -13,14 +13,25 @@ module.exports = {
 
         console.log(`Sorteio INICIADO no chat: ${chatId}`);
 
-        await client.sendMessage(chatId, `🍫 *AMIGO CHOCOLATE DOS MALADOS!* 🍫
-        
-Para participar, responda aqui com:
-*!participar 5543988888888 [Sua dica de presente]*
+        await client.sendMessage(chatId, `🍫 *AMIGO SECRETO INICIADO!* 🍫
 
-Exemplo:
-_!participar 5543999998888 Gosto de Milka de Oreo (Não gosto de chocolate com fruta)_
+📜 *Como Participar:*
 
-(bot feito pelo André, deve tá uma bosta)`);
+1️⃣ *Para você mesmo:*
+Digita: *!participar [Seu número] [Dica de presente]*
+Exemplo: _!participar 5511999998888 Gosta de livros_
+
+2️⃣ *Adicionar alguém offline:*
+Digita: *!adicionar [Número da Pessoa] [Nome da Pessoa] & [Dica]*
+Exemplo: _!adicionar 5511999998888 João & Gosta de Chá_
+(Adiciona alguém que não está no grupo ou está offline)
+
+3️⃣ *Apadrinhar alguém (Sem WhatsApp):*
+Digita: *!apadrinhar [Nome da Pessoa] & [Dica]*
+Exemplo: _!apadrinhar Vovó Maria & Gosta de Flores_
+(Você recebe o resultado por ela)
+Ou: *!apadrinhar 5511...8888 Vovó Maria & Dica* (Outra pessoa recebe)
+
+📢 *Quando todos estiverem cadastrados, digite !finalizar*`);
     }
 };
