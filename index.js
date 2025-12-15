@@ -72,15 +72,15 @@ client.on('message_create', async (message) => {
 
         console.log(`Sorteio INICIADO no chat: ${idGrupoPermitido}`);
 
-        await client.sendMessage(idGrupoPermitido, `🎄 *AMIGO SECRETO INICIADO!* 🎄
+        await client.sendMessage(idGrupoPermitido, `🍫 *AMIGO CHOCOLATE DOS MALADOS!* 🍫
         
 Para participar, responda aqui com:
-*!participar 5543SEUNUMERO [Sua dica de presente]*
+*!participar 5543988888888 [Sua dica de presente]*
 
 Exemplo:
-_!participar 5543999998888 Gosto de livros e chocolate_
+_!participar 5543999998888 Gosto de Milka de Oreo (Não gosto de chocolate com fruta)_
 
-(Quando todos entrarem, digite *!finalizar*)`);
+(bot feito pelo André, deve tá uma bosta)`);
     }
 
     // ======================================================
@@ -96,7 +96,7 @@ _!participar 5543999998888 Gosto de livros e chocolate_
         let nome = "Participante";
 
         if (message.fromMe) {
-            nome = "André";
+            nome = client.info.pushname || "Admin";
         } else if (message._data && message._data.notifyName) {
             nome = message._data.notifyName;
         }
@@ -230,7 +230,8 @@ _${dicaPresente}_`;
                             console.log(`⚠️ Não deu pra apagar (mas foi enviada).`);
                         }
                     } else {
-                        console.log(`👀 Mensagem mantida (André recebeu o próprio resultado).`);
+                        const nomeAdmin = client.info.pushname || "Admin";
+                        console.log(`👀 Mensagem mantida (${nomeAdmin} recebeu o próprio resultado).`);
                     }
 
                     await delay(2000); // Espera pro próximo
